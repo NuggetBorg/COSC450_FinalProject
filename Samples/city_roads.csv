@@ -1,0 +1,16 @@
+from,to,weight
+Airport,Downtown,12.5
+Airport,Harbor,9.0
+Downtown,University,3.2
+Downtown,Market,2.1
+Market,University,1.8
+Market,Stadium,4.7
+University,Library,1.1
+Library,Stadium,2.9
+Harbor,Market,6.4
+Harbor,Warehouse,3.3
+Warehouse,Stadium,5.5
+Stadium,Park,2.0
+Park,Library,3.6
+Park,Suburb,7.8
+Suburb,Warehouse,9.9
