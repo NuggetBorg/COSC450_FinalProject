@@ -4,11 +4,13 @@ use std::fs;
 
 pub type Graph = HashMap<String, Vec<(String, f64)>>;
  
+
 pub struct ReadGraph 
 {
     edge_count: usize,
 }
  
+
 impl ReadGraph 
 {
     pub fn new() -> Self 
@@ -16,7 +18,8 @@ impl ReadGraph
         ReadGraph {edge_count: 0}
     }
  
-   
+    //Reads in the CVS graph file it is passed when called in main
+    //Returns a graph the is constucted like the readed in file just without ','
     pub fn read_file(&mut self, path: &str) -> Graph 
     {
         let mut graph = Graph::new();

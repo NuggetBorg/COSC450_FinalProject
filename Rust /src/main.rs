@@ -1,10 +1,19 @@
 
 #[path = "ReadGraph.rs"] //This is so that it will look for the correct file neme 
 mod read_graph; //So the class can use the ReadGraphs's class methods
+
+use read_graph::{Graph};
+use std::collections::{HashMap, HashSet, VecDeque};
+
+//Queue of the correct path need to make from point a to point b
+type CorrectPath = VecDeque<String>;
  
-use std::io::{self, Write};
-use read_graph::{Graph, ReadGraph};
- 
+ //Main method this reads the file in from the samples folder
+ //Takes the file and puts it through the ReadGraph class
+ //Prints the graph to user in way that it shows each place in the graph and there neighbors
+ //promps user to select there start and end point
+ //calls shortest_path class to get the shortest path and the total weight/cost
+ //prints the path along with the total weight/cost
 fn main()
 {
     //Gets the CSV file from my computer and calls it path 
@@ -77,18 +86,107 @@ fn main()
         }
     }
 
-    if start.eq_ignore_ascii_case(&end)
+    let result = shortest_path(&graph, &start, &end);
+
+    
+    if result.is_none()
     {
-        println!("{} is the same as {} and will cost 0", start, end)
+        println!("Path is not possible");
     }
     else
     {
-        println!("Going from {} to {} will cost", start, end);
+
+        let (cost, mut path) = result.unwrap();
+        println!("The total cost for starting at {} and ending at {} is: {:.1}", start, end, cost);
+        println!();
+
+        let mut first_time = true;
+        while let Some(place) = path.pop_front()
+        {
+            if first_time
+            {
+                println!("Start: {}", place);
+                first_time = false;
+            }
+            else if path.is_empty()
+            {
+                println!("End:   {}", place);
+            }
+            else
+            {
+                println!("Go to: {}", place);
+            }
+        }
+        
     }
 }
 
-fn shortest_path()
+//Finds the shortest path possible and adds it to a queue called correct path
+//Keeps track of the total weight/cost of the trip
+fn shortest_path(graph: &Graph, start: &str, end: &str) ->Option<(f64, CorrectPath)>
 {
-    //noting yet
+   let mut dist: HashMap<String, f64> = HashMap::new();    //Cheapest cost found 
+    let mut prev: HashMap<String, String> = HashMap::new(); //Prevouse place 
+    let mut visited: HashSet<String> = HashSet::new();      //Places that have been visited 
+
+    dist.insert(start.to_string(), 0.0); //Adds the start and 0.0 since there is no cost for starting 
+
+    let mut found = false;
+
+    while !found
+    {
+        //Resets the curr and the best back to nothing 
+        let mut curr: Option<String> = None;
+        let mut best = f64::INFINITY;
+
+        for (name, d) in &dist
+        {
+            if !visited.contains(name) && *d < best
+            {
+                best = *d;
+                curr = Some(name.clone());
+            }
+        }
+
+        //Can not be possible, so returns nothing
+        if curr.is_none()
+        {
+            return None;
+        }
+        let curr = curr.unwrap();
+
+        if curr == end
+        {
+            found = true; //Found the end and the path is found
+        }
+        else
+        {
+            visited.insert(curr.clone());
+
+            for (neighbor, weight) in &graph[&curr]
+            {
+                let new_dist = best + weight; 
+                if !dist.contains_key(neighbor) || new_dist < dist[neighbor]
+                {
+                     dist.insert(neighbor.clone(), new_dist);
+                     prev.insert(neighbor.clone(), curr.clone());
+                }
+            }
+
+
+        }
+    }
+
+    //Reconstrucks path and puts it in a queue 
+    let mut path = CorrectPath::new();
+    let mut node = end.to_string();
+    path.push_front(node.clone());
+    while node != start
+    {
+        node = prev[&node].clone();
+        path.push_front(node.clone());
+    }
+
+    Some((dist[end], path))
 }
 
