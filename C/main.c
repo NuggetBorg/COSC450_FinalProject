@@ -1,9 +1,9 @@
 // Main file for project in C
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#define _CRT_SECURE_NO_WARNINGS
 #ifdef _MSC_VER
 #define strcasecmp _stricmp
 #define strdup _strdup
@@ -118,8 +118,8 @@ void readGraph(Graph *g, const char *filename){
             printf("Skipping line %d: expected 3 fields\n", lineNum);
             continue;
         }
-        int fromIndex = findOrAddNode(g, from);
-        int toIndex = findOrAddNode(g, to);
+        int fromIndex = findOrAddNode(g, trim(from));
+        int toIndex = findOrAddNode(g, trim(to));
         addEdge(g, fromIndex, toIndex, weight);
     }
     fclose(file);
@@ -135,8 +135,8 @@ int findNodeIgnoreCase(Graph *g, const char *name){
 }
 
 static int compareNodePtrs(const void *a, const void *b){
-    Node *na = (Node *)a;
-    Node *nb = (Node *)b;
+    Node *na = *(Node * const *)a;
+    Node *nb = *(Node * const *)b;
     return strcmp(na->name, nb->name);
 }
 
@@ -196,8 +196,80 @@ int shortestPath(Graph *g, int start, int end, double *costOut, int *path, int *
 
 }
 
-int main() {
-    // JACK WRITE MAIN METHOD!!
-    printf("Hello, World!\n");
+void printGraph(Graph *g) {
+    if (g->count == 0) {
+        printf("Graph is empty.\n");
+        return;
+    }
+
+    Node **sorted = malloc(g->count * sizeof(Node *));
+    for (int i = 0; i < g->count; i++) {
+        sorted[i] = &g->nodes[i];
+    }
+    qsort(sorted, g->count, sizeof(Node *), compareNodePtrs);
+    for (int i = 0; i < g->count; i++) {
+        Node *node = sorted[i];
+        printf("Node %s:\n", node->name);
+        for (int j = 0; j < node->edgeCount; j++) {
+            Edge *e = &node->edges[j];
+            printf("  -> %s (weight: %.2f)\n", g->nodes[e->to].name, e->weight);
+        }
+    }
+    free(sorted);
+}
+// Keeps asking until the user types a place that exists. Returns its index.
+int promptForPlace(Graph *g, const char *prompt){
+    char input[256];
+    while(1){
+        printf("%s", prompt);
+        fflush(stdout);
+        if(fgets(input, sizeof(input), stdin) == NULL){
+            exit(1);   // input was closed
+        }
+        int idx = findNodeIgnoreCase(g, trim(input));
+        if(idx != -1) return idx;
+        printf("That place is not in the graph.\n");
+    }
+}
+
+int main(int argc, char *argv[]) {
+    const char *filePath = (argc > 1) ? argv[1] : "C:\\Users\\jackm\\COSC450\\final_project\\Samples\\city_roads.csv";
+
+    Graph g;
+    graphInit(&g);
+    readGraph(&g, filePath);
+
+    if(g.count == 0){
+        printf("The graph is empty.\n");
+        freeGraph(&g);
+        return 1;
+    }
+
+    printGraph(&g);
+
+    int start = promptForPlace(&g, "Where are you starting from? ");
+    int end = promptForPlace(&g, "Where are you ending at? ");
+
+    int *route = malloc(g.count * sizeof(int));
+    int routeLen = 0;
+    double cost = 0.0;
+
+    if(!shortestPath(&g, start, end, &cost, route, &routeLen)){
+        printf("Path is not possible\n");
+    } else {
+        printf("The total cost for starting at %s and ending at %s is: %.1f\n\n",
+               g.nodes[start].name, g.nodes[end].name, cost);
+
+        // route is backward (end first), so print from the last index down
+        for(int i = routeLen - 1; i >= 0; i--){
+            const char *place = g.nodes[route[i]].name;
+            if(i == routeLen - 1)  printf("Start: %s\n", place);
+            else if(i == 0)        printf("End:   %s\n", place);
+            else                   printf("Go to: %s\n", place);
+        }
+    }
+
+    free(route);
+    freeGraph(&g);
     return 0;
 }
